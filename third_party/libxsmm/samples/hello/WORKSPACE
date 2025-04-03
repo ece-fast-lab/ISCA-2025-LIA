@@ -1,4 +1,0 @@
-local_repository(
-    name = "xsmm",
-    path = "../..",
-)

@@ -1,8 +1,0 @@
-[merge "ours"]
-	driver = true
-
-[mailmap]
-	file = .github/.mailmap
-
-[log]
-	mailmap = true
