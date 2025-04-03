@@ -1,0 +1,5 @@
+hyperparams: 
+  launcher:
+    hp: ['ncores_per_instance', 'ninstances']  
+    ncores_per_instance: all_physical_cores
+    ninstances: [1]

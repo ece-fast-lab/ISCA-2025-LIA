@@ -1,0 +1,1 @@
+gcc -fPIC -shared -o libnuma_alloc.so numa_alloc.c -lnuma

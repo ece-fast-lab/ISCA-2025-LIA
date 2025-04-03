@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+###############################################################################
+# Copyright (c) Intel Corporation - All rights reserved.                      #
+# This file is part of the LIBXSMM library.                                   #
+#                                                                             #
+# For information on the license, see the LICENSE file.                       #
+# Further information: https://github.com/libxsmm/libxsmm/                    #
+# SPDX-License-Identifier: BSD-3-Clause                                       #
+###############################################################################
+# Hans Pabst (Intel Corp.)
+###############################################################################
+
+HERE=$(cd "$(dirname $0)"; pwd -P)
+if [ "" = "${GIT_DIR}" ]; then
+  GIT_DIR=${HERE}/../../.git
+fi
+LOCKFILE=${GIT_DIR}/.commit
+
+GIT=$(command -v git)
+RM=$(command -v rm)
+if [ "" = "${GIT}" ] || [ "" = "${RM}" ]; then
+  >&2 echo "ERROR: command not found, skipping post-commit hook!"
+  exit 0
+fi
+
+AMEND=0
+# lock files must be deleted *prior* to amending changes
+if [ -e "${LOCKFILE}-version" ]; then
+  ${RM} "${LOCKFILE}-version"
+  AMEND=1
+fi
+if [ -e "${LOCKFILE}-format" ]; then
+  ${RM} "${LOCKFILE}-format"
+  AMEND=1
+fi
+if [ "0" != "${AMEND}" ]; then
+  ${GIT} commit --amend -C HEAD --no-verify >/dev/null
+fi

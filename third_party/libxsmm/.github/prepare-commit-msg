@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+###############################################################################
+# Copyright (c) Intel Corporation - All rights reserved.                      #
+# This file is part of the LIBXSMM library.                                   #
+#                                                                             #
+# For information on the license, see the LICENSE file.                       #
+# Further information: https://github.com/libxsmm/libxsmm/                    #
+# SPDX-License-Identifier: BSD-3-Clause                                       #
+###############################################################################
+# Hans Pabst (Intel Corp.)
+###############################################################################
+
+# Appends MSG_TAG to the commit message when no file
+# of the change-set matches any of the PATTERNS.
+#
+HERE=$(cd "$(dirname $0)"; pwd -P)
+if [ "" = "${GIT_DIR}" ]; then
+  GIT_DIR="${HERE}/../../.git"
+fi
+ROOTDIR="$(cd "${GIT_DIR}/.."; pwd -P)"
+CODEFILE=${ROOTDIR}/.codefile
+MSG_NOCI="[skip ci]"
+MSG_FILE="$1"
+MSG_KIND="$2"
+
+GIT=$(command -v git)
+
+if [ "" != "${GIT}" ] && ! ${GIT} diff --cached --quiet; then # real commit (no amend)
+  GREP=$(command -v grep)
+  CAT=$(command -v cat)
+  SED=$(command -v sed)
+
+  if [ "" != "${GREP}" ] && [ "" != "${CAT}" ] && \
+     [ "message" = "${MSG_KIND}" ] && [ "" != "${MSG_FILE}" ] && \
+     [ "0" != "$(${GREP} -qs -F "${MSG_NOCI}" "${MSG_FILE}"; echo $?)" ];
+  then
+    set -o noglob # disable wild-card expansion
+
+    if [ -e "${CODEFILE}" ]; then
+      PATTERNS="$(${CAT} "${CODEFILE}" 2>/dev/null)"
+    fi
+    PATTERNS="${PATTERNS}$(echo -e '\nMakefile*')"
+
+    for FILENAME in $(${GIT} diff --cached --name-only); do
+      if [ -e "${FILENAME}" ]; then # file must exist i.e., not a deletion
+        if [ "" != "$(echo "${FILENAME}" | ${GREP} -e '^.github/..*' 2>/dev/null)" ]; then
+          exit 0
+        fi
+        if [ "" != "$(echo "${FILENAME}" | ${GREP} -e 'version.txt' 2>/dev/null)" ]; then
+          exit 0
+        fi
+        BASENAME=$(basename "${FILENAME}")
+        for PATTERN in ${PATTERNS}; do
+          if [[ ${BASENAME} = ${PATTERN} ]]; then # must use double-braces
+            exit 0
+          fi
+        done
+      fi
+    done
+    if [ "" != "${SED}" ]; then
+      ${SED} -i "\$s/\(..*\)$/\1 /;\$s/$/${MSG_NOCI}/" "${MSG_FILE}"
+    else
+      echo "${MSG_NOCI}" >> "${MSG_FILE}"
+    fi
+  fi
+fi
+

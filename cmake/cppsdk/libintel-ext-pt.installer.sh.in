@@ -1,0 +1,151 @@
+#!/bin/bash
+
+IFS=';'
+
+SCRIPT=$(realpath "$0")
+SCRIPT_PATH=$(dirname "$SCRIPT")
+
+COMMAND=""
+LIBTORCH_PATH=""
+LOGFILE="ipex-info"
+
+# Below values will be set automatically. DO NOT modify them manually!
+# Append new required relative_path/components in LIBIPEX_COMP_LIST in cmake scripts
+LIBIPEX_VERSION="@LIBIPEX_VERSION@"
+LIBIPEX_GITREV="@LIBIPEX_GITREV@"
+LIBIPEX_BUILD_TYPE="@CMAKE_BUILD_TYPE@"
+LIBIPEX_PACK_NAME="@CPACK_PACKAGE_NAME@"
+LIBIPEX_COMPS_LIST="@LIBIPEX_COMP_LIST@"
+
+if [ $# == 2 ]; then
+    COMMAND=$1
+    LIBTORCH_PATH=$2
+else
+    echo "Usage: bash $0 [install|uninstall] <libtorch_path>"
+    exit 10
+fi
+
+if [[ ! ${COMMAND} == "install" ]] && [[ ! ${COMMAND} == "uninstall" ]]; then
+    echo "Unrecognized execution mode: ${COMMAND}"
+    exit 11
+fi
+
+if [ ! -d ${LIBTORCH_PATH} ]; then
+    echo "${LIBTORCH_PATH} does not exist or is not a folder!"
+    exit 12
+fi
+
+LIBTORCH_PATH=$(realpath ${LIBTORCH_PATH})
+if [ ! -f ${LIBTORCH_PATH}/build-version ]; then
+    echo "${LIBTORCH_PATH} doesn't seem to be directory of libtorch."
+    exit 13
+fi
+
+echo "===============LIBIPEX Installer==============="
+echo "   IPEX Version  :  ${LIBIPEX_VERSION}"
+echo "   Libtorch Path :  ${LIBTORCH_PATH}"
+echo "   User Command  :  ${COMMAND}"
+echo "==============================================="
+
+# LIBIPEX Installation
+if [[ ${COMMAND} == "install" ]]; then
+    TORCH_VERSION=$(cat ${LIBTORCH_PATH}/build-version)
+    [[ ${TORCH_VERSION} =~ ([0-9]+\.[0-9]+).* ]]
+    TORCH_VER=${BASH_REMATCH[1]}
+    [[ ${LIBIPEX_VERSION} =~ ([0-9]+\.[0-9]+).* ]]
+    IPEX_VER=${BASH_REMATCH[1]}
+    if [[ ${IPEX_VER} != ${TORCH_VER} ]]; then
+        echo "Installation failed."
+        echo "ERROR! Intel® Extension for PyTorch* needs to work with libtorch ${IPEX_VER}.*."
+        echo "But libtorch ${TORCH_VERSION} is found. Please switch to the appropriate version and run again."
+        exit 14
+    fi
+
+    TMP_DIR=$(mktemp -d /tmp/${LIBIPEX_PACK_NAME}.XXXXXX)
+    if [ ! -d ${TMP_DIR} ]; then
+        echo "ERROR! Failed to create tmp dir ${TMP_DIR}"
+        exit 15
+    fi
+
+    for comp in ${LIBIPEX_COMPS_LIST}; do
+        fn=$(basename ${comp})
+        fp=$(dirname ${comp})
+
+        if [ -f ${LIBTORCH_PATH}/${comp} ]; then
+            echo "Installation failed."
+            echo "ERROR! ${fn} already exists in ${LIBTORCH_PATH}/${fp}."
+            exit 16
+        fi
+    done
+
+    ARCHIVE_NR=$(awk '/^__ARCHIVE_BELOW_ONLY__/ {print NR + 1; exit 0; }' $0)
+    tail -n+${ARCHIVE_NR} $0 | tar xJfv - -C ${TMP_DIR} --strip-components=1
+
+    echo "Version: $LIBIPEX_VERSION" > ${LIBTORCH_PATH}/${LOGFILE}
+    echo "Gitrev:  $LIBIPEX_GITREV" >> ${LIBTORCH_PATH}/${LOGFILE}
+    echo "Build:   $LIBIPEX_BUILD_TYPE" >> ${LIBTORCH_PATH}/${LOGFILE}
+    echo "" >> ${LIBTORCH_PATH}/${LOGFILE}
+    for comp in ${LIBIPEX_COMPS_LIST}; do
+        fn=$(basename ${comp})
+        fp=$(dirname ${comp})
+
+        if [ ! -f ${TMP_DIR}/${comp} ]; then
+            echo "Installation failed."
+            echo "ERROR! Cannot find ${fn} in ${TMP_DIR}/${fp}. Uncompress failed!"
+            rm ${LIBTORCH_PATH}/${LOGFILE} 2>/dev/null
+            exit 17
+        fi
+
+        if [ ! -d ${LIBTORCH_PATH}/${fp} ]; then
+            mkdir -p ${LIBTORCH_PATH}/${fp}
+            if [ $? -gt 0 ]; then
+                echo "Installation failed."
+                echo "ERROR! Failed to create folder ${LIBTORCH_PATH}/${fp}!"
+                echo "Please check if you have privileges to write in ${LIBTORCH_PATH}."
+                rm ${LIBTORCH_PATH}/${LOGFILE} 2>/dev/null
+                exit 18
+            fi
+            echo "d|${fp}" >> ${LIBTORCH_PATH}/${LOGFILE}
+        fi
+
+        cp ${TMP_DIR}/${comp} ${LIBTORCH_PATH}/${comp}
+        if [ $? -gt 0 ]; then
+            echo "Installation failed."
+            echo "ERROR! Failed to install ${fn} into ${LIBTORCH_PATH}/${fp}!"
+            echo "Please check if you have privileges to write in ${LIBTORCH_PATH}/${fp}."
+            rm ${LIBTORCH_PATH}/${LOGFILE} 2>/dev/null
+            exit 19
+        fi
+        echo "f|${comp}" >> ${LIBTORCH_PATH}/${LOGFILE}
+    done
+
+    echo "Installation successed!"
+
+# LIBIPEX Uninstallation
+elif [[ ${COMMAND} == "uninstall" ]]; then
+    while read -r line; do
+        FILE=$(echo ${line} | cut -d '|' -f 2)
+        if [ -f ${LIBTORCH_PATH}/${FILE} ]; then
+            rm -f ${LIBTORCH_PATH}/${FILE}
+        fi
+    done < <(grep "f|" ${LIBTORCH_PATH}/${LOGFILE})
+
+    while read -r line; do
+        FOLDER=$(echo ${line} | cut -d '|' -f 2)
+        COUNT=$(ls -1 ${LIBTORCH_PATH}/${FOLDER} | wc -l)
+        if [ ${COUNT} -eq 0 ]; then
+            rm -rf ${LIBTORCH_PATH}/${FOLDER}
+        else
+            echo "${LIBTORCH_PATH}/${FOLDER} is not empty, skip."
+        fi
+    done < <(grep "d|" ${LIBTORCH_PATH}/${LOGFILE})
+
+    if [ -f ${LIBTORCH_PATH}/${LOGFILE} ]; then
+        rm -f ${LIBTORCH_PATH}/${LOGFILE}
+    fi
+
+    echo "Uninstallation successed!"
+fi
+
+exit
+__ARCHIVE_BELOW_ONLY__

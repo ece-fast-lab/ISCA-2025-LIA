@@ -1,0 +1,16 @@
+diff/diff
+diff/difff
+math/math
+dispatch/dispatch
+dispatch/dispatchf
+mhd/mhd
+rng/rng
+rng/rng_avx512
+scratch/scratch
+sync/sync_barrier
+sync/sync_lock
+wrap/dgemm-blas
+wrap/dgemv-blas
+wrap/dgemm-wrap
+wrap/dgemv-wrap
+wrap/autobatch
