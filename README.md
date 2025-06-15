@@ -45,7 +45,7 @@ source ./tools/env_activate.sh
 ```
 # 4. How to Run
 ## 4.1 Creating Dummy Model Weights (Only for OPT-175B)
-As OPT-175B model is not open-sourced, the following command are used to generate dummy weights:
+As OPT-175B model is not open-sourced, the following command can be used to generate dummy weights:
 ```
 # create a directory on the mounted storage to store OPT-175B model
 mkdir -p "/home/storage/opt-175b"
@@ -54,23 +54,16 @@ python utils/opt_dummy_weights.py --model-"opt-175b" --save_dir="/home/storage/o
 # copy the prepared tokenizer for OPT-175b to the directory
 cp /home/ubuntu/llm/utils/tokenizer/* /home/storage/opt-175b/
 ```
-## 4.2 Performance Profiling for Online Inference
-Run the following bash script as follows:
-```
-bash online_opt-{size}.sh
-```
+## 4.2 Performance Profiling
 We provide example scripts for opt-30b and opt-175b models to reproduce the results in an SPR-A100 system.
-
-## 4.3 Performance Profiling for Offline Inference
-Run the following bash script as follows:
+The script will collect data for LIA and IPEX for online and offline inference.
 ```
-bash offline_opt-{size}.sh
+bash scripts/run_performance.sh
 ```
-Similarly, example scripts for opt-30b and opt-175b models are provided.
 
-## 4.4 CXL-Offloading for Large-batch inference
+## 4.3 CXL-Offloading for Large-batch Inference
 Run the following example bash script as follows:
 ```
-bash cxl_opt-30b.sh
+bash scripts/cxl_offloading.sh
 ```
 The example script is for opt-30b that reproduces the results in an SPR-A100 system.
