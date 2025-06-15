@@ -54,6 +54,30 @@ python utils/opt_dummy_weights.py --model-"opt-175b" --save_dir="/home/storage/o
 # copy the prepared tokenizer for OPT-175b to the directory
 cp /home/ubuntu/llm/utils/tokenizer/* /home/storage/opt-175b/
 ```
+## 4.2 Quick Example for Running OPT-30B Inference with LIA
+```
+OMP_NUM_THREADS=32 numactl -m 0 -C 0-31 python run.py --benchmark -m facebook/opt-30b --dtype bfloat16 --ipex --input-tokens 256 --max-new-tokens 32 --batch-size 64 --token-latency --num-iter 10 --num-warmup 2 --greedy --prefill-policy 0 --decoding-policy 1 --gpu-percentage 10 --num-minibatch 2 --pin-weight --enable-cxl
+```
+LIA-specific Parameters –
+
+`--prefill-policy/decoding-policy`: {0, 1, 2}
+
+0 –> (0,0,0,0,0,0) full GPU compute 
+
+1 –> (1,1,1,1,1,1) full CPU compute 
+
+2 –> (0,1,1,0,0,0) partial CPU offloading
+
+(The vector values follow the notation described in the paper)
+
+`--gpu-percentage`: The percentage of model parameters to load to the GPU memory
+
+`--num-minibatch`: The number of minibatches which the batch would be split into during the prefill stage
+
+`--pin-weight`: Pin the entire model parameters on CPU memory.
+
+`--enable-cxl`: Offload the model parameters to the CXL memory.
+
 ## 4.2 Performance Profiling
 We provide example scripts for opt-30b and opt-175b models to reproduce the results in an SPR-A100 system.
 The script will collect data for LIA and IPEX for online and offline inference.
