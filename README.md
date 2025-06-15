@@ -1,14 +1,21 @@
 # LIA: A Single-GPU LLM Inference Acceleration with Cooperative AMX-Enabled CPU-GPU Computation and CXL Offloading
 
 LIA is a CPU-GPU collaborative computing framework that accelerates LLM inference on a single GPU, leveraging Intel's AMX technology and CXL.
-# 1 System Requirement
+# 1. System Requirement
 Hardware requirements:
 - CPU: >= 4th generation Intel Xeon Scalable Processor
 - GPU: NVIDIA A100/H100 GPUs
 
-# 2 Docker-based environment setup
+# 2. Docker-based environment setup
 
-## 2.1 Build Docker Image with Compilation from Source
+## 2.1. (Recommended) Pull Docker Image
+
+```
+# Directly download the image from Docker.io hub
+docker pull hyungyo/lia-amxgpu:latest
+```
+
+## 2.2. Build Docker Image with Compilation from Source
 
 ```
 # Download the Git repository
@@ -21,14 +28,6 @@ git submodule update --init --recursive
 DOCKER_BUILDKIT=1 docker build -f examples/cpu/inference/python/llm/Dockerfile --build-arg COMPILE=ON -t lia-amxgpu:main .
 ```
 
-## 2.2 (Alternative) Pull Docker Image
-
-```
-# Directly download the image from Docker.io hub
-docker pull hyungyo/lia-amxgpu:latest
-```
-
-  
 
 # 3. Run Docker Image with GPU
 Install CUDA container toolkit with the following command:
