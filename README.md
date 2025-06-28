@@ -1,6 +1,9 @@
 # LIA: A Single-GPU LLM Inference Acceleration with Cooperative AMX-Enabled CPU-GPU Computation and CXL Offloading
 
 LIA is a CPU-GPU collaborative computing framework that accelerates LLM inference on a single GPU, leveraging Intel's AMX technology and CXL.
+
+Link to the Paper (ISCA'25): https://dl.acm.org/doi/10.1145/3695053.3731092
+
 # 1. System Requirement
 Hardware requirements:
 - CPU: >= 4th generation Intel Xeon Scalable Processor
