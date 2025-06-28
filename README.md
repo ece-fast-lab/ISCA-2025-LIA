@@ -9,30 +9,44 @@ Hardware requirements:
 - CPU: >= 4th generation Intel Xeon Scalable Processor
 - GPU: NVIDIA A100/H100 GPUs
 
-# 2. Docker-based environment setup
+# 2. Supported Models
 
-## 2.1. (Recommended) Pull Docker Image
+- OPT models
+- Llama 2 & 3 models
+
+Note: OPT and Llama models are supported by different docker images as described in 3.1.
+
+# 3. Docker-based environment setup
+
+## 3.1. (Recommended) Pull Docker Image
 
 ```
 # Directly download the image from Docker.io hub
+
+# Docker image for OPT models
 docker pull hyungyo/lia-amxgpu:latest
+
+# Docker image for Llama models
+docker pull hyungyo/lia-llama:v2
 ```
 
-## 2.2. Build Docker Image with Compilation from Source
+## 3.2. Build Docker Image with Compilation from Source
 
 ```
 # Download the Git repository
 git clone https://github.com/Hyungyo1/LIA_AMXGPU.git
+
 # Update submodules
 cd LIA_AMXGPU
 git submodule sync
 git submodule update --init --recursive
+
 # Build an image with the provided Dockerfile
 DOCKER_BUILDKIT=1 docker build -f examples/cpu/inference/python/llm/Dockerfile --build-arg COMPILE=ON -t lia-amxgpu:main .
 ```
 
 
-# 3. Run Docker Image with GPU
+# 4. Run Docker Image with GPU
 Install CUDA container toolkit with the following command:
 ```
 sudo apt-get install -y nvidia-container-toolkit
@@ -46,18 +60,20 @@ Activate and update environment variables:
 cd llm
 source ./tools/env_activate.sh
 ```
-# 4. How to Run
-## 4.1 Creating Dummy Model Weights (Only for OPT-175B)
+# 5. How to Run
+## 5.1 Creating Dummy Model Weights (Only for OPT-175B)
 As OPT-175B model is not open-sourced, the following command can be used to generate dummy weights:
 ```
 # create a directory on the mounted storage to store OPT-175B model
 mkdir -p "/home/storage/opt-175b"
+
 # generate dummy weights
 python utils/opt_dummy_weights.py --model-"opt-175b" --save_dir="/home/storage/opt-175b/"
+
 # copy the prepared tokenizer for OPT-175b to the directory
 cp /home/ubuntu/llm/utils/tokenizer/* /home/storage/opt-175b/
 ```
-## 4.2 Quick Example for Running OPT-30B Inference with LIA
+## 5.2 Quick Example for Running OPT-30B Inference with LIA
 ```
 OMP_NUM_THREADS=32 numactl -m 0 -C 0-31 python run.py --benchmark -m facebook/opt-30b --dtype bfloat16 --ipex --input-tokens 256 --max-new-tokens 32 --batch-size 64 --token-latency --num-iter 10 --num-warmup 2 --greedy --prefill-policy 0 --decoding-policy 1 --gpu-percentage 10 --num-minibatch 2 --pin-weight --enable-cxl
 ```
@@ -81,14 +97,14 @@ LIA-specific Parameters –
 
 `--enable-cxl`: Offload the model parameters to the CXL memory.
 
-## 4.2 Performance Profiling
+## 5.3 Performance Profiling
 We provide example scripts for opt-30b and opt-175b models to reproduce the results in an SPR-A100 system.
 The script will collect data for LIA and IPEX for online and offline inference.
 ```
 bash scripts/run_performance.sh
 ```
 
-## 4.3 CXL-Offloading for Large-batch Inference
+## 5.4 CXL-Offloading for Large-batch Inference
 Run the following example bash script as follows:
 ```
 bash scripts/cxl_offloading.sh
