@@ -22,7 +22,9 @@ RUN apt update && \
     numactl \
     gcc-12 \
     g++-12 \
-    make
+    make \
+    cmake
+
 RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 && \
     update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100 && \
     update-alternatives --install /usr/bin/cc cc /usr/bin/gcc 100 && \
@@ -40,22 +42,27 @@ RUN curl -fsSL -v -o miniconda.sh -O https://repo.anaconda.com/miniconda/Minicon
     bash miniconda.sh -b -p ./miniconda3 && \
     rm miniconda.sh && \
     echo "source ~/miniconda3/bin/activate" >> ./.bashrc && \
+    ./miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    ./miniconda3/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
     wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb && \
     sudo dpkg -i cuda-keyring_1.1-1_all.deb && \
     sudo apt-get update && \
     sudo apt-get -y install cuda-toolkit-12-4 && \
     sudo apt-get -y install cudnn && \
-    rm cuda-keyring_1.1-1_all.deb && \
-    export CUDACXX=/usr/local/cuda/bin/nvcc && \
-    export CUDA_HOME=/usr/local/cuda && \
-    export PATH=$PATH:$CUDA_HOME/bin
+    rm cuda-keyring_1.1-1_all.deb
+
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=$CUDA_HOME/bin:$PATH
+ENV LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 
 # --build-arg COMPILE=ON to compile from source
 FROM base AS dev
 ARG COMPILE
 COPY --chown=ubuntu:ubuntu . ./intel-extension-for-pytorch
+
 RUN . ./miniconda3/bin/activate && \
     conda create -y -n compile_py310 python=3.10 && conda activate compile_py310 && \
+    python -m pip install cmake==3.18.4.post1 && \
     cd intel-extension-for-pytorch/examples/cpu/inference/python/llm && \
     if [ -z ${COMPILE} ]; then bash tools/env_setup.sh 6; else bash tools/env_setup.sh 2; fi
 
