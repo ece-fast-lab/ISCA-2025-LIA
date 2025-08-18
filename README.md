@@ -34,10 +34,10 @@ docker pull hyungyo/lia-llama:v2
 
 ```
 # Download the Git repository
-git clone https://github.com/Hyungyo1/LIA_AMXGPU.git
+git clone https://github.com/ece-fast-lab/ISCA-2025-LIA.git
 
 # Update submodules
-cd LIA_AMXGPU
+cd ISCA-2025-LIA
 git submodule sync
 git submodule update --init --recursive
 
