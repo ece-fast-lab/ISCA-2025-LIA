@@ -79,6 +79,8 @@ OMP_NUM_THREADS=32 numactl -m 0 -C 0-31 python run.py --benchmark -m facebook/op
 ```
 LIA-specific Parameters –
 
+-----
+
 `--prefill-policy/decoding-policy`: {0, 1, 2}
 
 0 –> (0,0,0,0,0,0) full GPU compute 
@@ -89,13 +91,25 @@ LIA-specific Parameters –
 
 (The vector values follow the notation described in the paper)
 
+Note that the optimal policy for each stages (prefill/decode) for a given batch size and sequence length can be obtained with the Python script in `/policy_search/policy_search.py`.
+
+-----
+
 `--gpu-percentage`: The percentage of model parameters to load to the GPU memory
+
+-----
 
 `--num-minibatch`: The number of minibatches which the batch would be split into during the prefill stage
 
+-----
+
 `--pin-weight`: Pin the entire model parameters on CPU memory.
 
+-----
+
 `--enable-cxl`: Offload the model parameters to the CXL memory.
+
+-----
 
 ## 5.3 Performance Profiling
 We provide example scripts for opt-30b and opt-175b models to reproduce the results in an SPR-A100 system.
